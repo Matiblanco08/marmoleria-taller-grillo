@@ -1,0 +1,913 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<title>Marmolería — Taller</title>
+<style>
+  /* ── RESET & BASE ── */
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --azul:      #185FA5;
+    --azul-l:    #E6F1FB;
+    --azul-t:    #0C447C;
+    --verde:     #3B6D11;
+    --verde-l:   #EAF3DE;
+    --verde-t:   #27500A;
+    --ambar:     #BA7517;
+    --ambar-l:   #FAEEDA;
+    --ambar-t:   #633806;
+    --rojo:      #A32D2D;
+    --rojo-l:    #FCEBEB;
+    --rojo-t:    #501313;
+    --purple:    #534AB7;
+    --purple-l:  #EEEDFE;
+    --purple-t:  #3C3489;
+    --gris:      #5F5E5A;
+    --gris-l:    #F1EFE8;
+    --gris-t:    #2C2C2A;
+    --border:    #D3D1C7;
+    --bg:        #F8F7F4;
+    --bg2:       #FFFFFF;
+    --txt:       #1a1a18;
+    --txt2:      #5F5E5A;
+    --radius:    12px;
+    --shadow:    0 1px 4px rgba(0,0,0,0.08);
+  }
+  html, body { height: 100%; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg); color: var(--txt); font-size: 15px; }
+
+  /* ── LAYOUT ── */
+  .app { display: flex; flex-direction: column; height: 100vh; max-width: 600px; margin: 0 auto; background: var(--bg2); }
+  .header { background: var(--bg2); border-bottom: 1px solid var(--border); padding: 12px 16px; display: flex; justify-content: space-between; align-items: center; flex-shrink: 0; }
+  .header-title { font-size: 17px; font-weight: 600; color: var(--txt); }
+  .header-sub { font-size: 12px; color: var(--txt2); margin-top: 1px; }
+  .sync-btn { background: var(--azul-l); color: var(--azul-t); border: none; border-radius: 8px; padding: 7px 12px; font-size: 13px; font-weight: 500; cursor: pointer; display: flex; align-items: center; gap: 5px; }
+  .sync-btn:active { opacity: 0.7; }
+  .sync-icon { width: 14px; height: 14px; }
+
+  /* ── NAV ── */
+  .nav { display: grid; grid-template-columns: repeat(4, 1fr); border-bottom: 1px solid var(--border); flex-shrink: 0; background: var(--bg2); }
+  .nav-btn { padding: 10px 4px 8px; font-size: 12px; color: var(--txt2); background: none; border: none; border-bottom: 2px solid transparent; cursor: pointer; text-align: center; line-height: 1.3; font-weight: 400; }
+  .nav-btn.activo { color: var(--azul); border-bottom-color: var(--azul); font-weight: 600; }
+  .nav-icon { display: block; width: 20px; height: 20px; margin: 0 auto 3px; }
+
+  /* ── CONTENIDO ── */
+  .contenido { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; }
+  .pantalla { display: none; padding: 14px; }
+  .pantalla.activa { display: block; }
+
+  /* ── STATS ── */
+  .stats { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 16px; }
+  .stat { background: var(--gris-l); border-radius: 10px; padding: 12px 14px; }
+  .stat-lbl { font-size: 12px; color: var(--txt2); margin-bottom: 3px; }
+  .stat-val { font-size: 24px; font-weight: 600; }
+  .ok  { color: var(--verde); }
+  .warn{ color: var(--ambar); }
+  .bad { color: var(--rojo); }
+  .info{ color: var(--azul);  }
+
+  /* ── SECCIÓN TÍTULO ── */
+  .sec { font-size: 11px; font-weight: 600; color: var(--txt2); text-transform: uppercase; letter-spacing: .07em; margin: 0 0 10px; }
+
+  /* ── CARD OT ── */
+  .card { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius); padding: 13px; margin-bottom: 10px; cursor: pointer; transition: border-color .15s; }
+  .card:active { border-color: var(--azul); background: var(--azul-l); }
+  .card-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 6px; }
+  .ot-num { font-size: 12px; font-weight: 600; color: var(--azul); }
+  .card-cli { font-size: 16px; font-weight: 600; margin-bottom: 3px; }
+  .card-det { font-size: 13px; color: var(--txt2); }
+  .card-foot { display: flex; justify-content: space-between; margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--border); font-size: 12px; color: var(--txt2); }
+  .urg { color: var(--rojo); font-weight: 600; }
+
+  /* ── BADGES ── */
+  .badge { font-size: 11px; font-weight: 600; padding: 3px 9px; border-radius: 20px; white-space: nowrap; }
+  .b-espera   { background: var(--ambar-l); color: var(--ambar-t); }
+  .b-corte    { background: var(--azul-l);  color: var(--azul-t);  }
+  .b-pulido   { background: var(--purple-l);color: var(--purple-t);}
+  .b-listo    { background: var(--verde-l); color: var(--verde-t); }
+  .b-pend     { background: var(--ambar-l); color: var(--ambar-t); }
+  .b-confirm  { background: var(--verde-l); color: var(--verde-t); }
+  .b-gris     { background: var(--gris-l);  color: var(--gris-t);  }
+
+  /* ── FILTROS ── */
+  .filtros { display: flex; gap: 8px; margin-bottom: 13px; overflow-x: auto; padding-bottom: 3px; }
+  .filtros::-webkit-scrollbar { display: none; }
+  .chip { padding: 6px 14px; border-radius: 20px; border: 1px solid var(--border); background: transparent; font-size: 13px; color: var(--txt2); cursor: pointer; white-space: nowrap; }
+  .chip.activo { background: var(--azul-l); color: var(--azul-t); border-color: #85B7EB; font-weight: 600; }
+
+  /* ── DETALLE ── */
+  .back-btn { display: flex; align-items: center; gap: 5px; background: none; border: none; color: var(--azul); font-size: 15px; cursor: pointer; padding: 0; margin-bottom: 14px; font-weight: 500; }
+  .dpanel { background: var(--gris-l); border-radius: var(--radius); padding: 14px; margin-bottom: 14px; }
+  .drow { display: flex; justify-content: space-between; padding: 7px 0; border-bottom: 1px solid var(--border); font-size: 14px; }
+  .drow:last-child { border-bottom: none; }
+  .dlbl { color: var(--txt2); }
+  .dval { font-weight: 600; text-align: right; max-width: 60%; word-break: break-word; }
+
+  /* ── MÁQUINAS ── */
+  .sec-maq { font-size: 11px; font-weight: 600; color: var(--txt2); text-transform: uppercase; letter-spacing: .07em; margin: 16px 0 10px; }
+  .maq-card { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px; margin-bottom: 10px; }
+  .maq-card.en-proceso { border-color: var(--azul); border-left: 4px solid var(--azul); }
+  .maq-card.finalizado { border-color: var(--verde); border-left: 4px solid var(--verde); }
+  .maq-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+  .maq-nombre { font-size: 15px; font-weight: 700; letter-spacing: .03em; }
+  .maq-estado { font-size: 11px; font-weight: 600; padding: 3px 9px; border-radius: 20px; }
+  .est-pend { background: var(--gris-l);  color: var(--gris-t);  }
+  .est-prog { background: var(--azul-l);  color: var(--azul-t);  }
+  .est-done { background: var(--verde-l); color: var(--verde-t); }
+  .maq-select { width: 100%; border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px; font-size: 14px; background: var(--bg); color: var(--txt); margin-bottom: 10px; appearance: none; -webkit-appearance: none; }
+  .maq-select:focus { outline: 2px solid var(--azul); }
+  .maq-times { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .time-btn { border: none; border-radius: 8px; padding: 12px 8px; font-size: 13px; font-weight: 600; cursor: pointer; text-align: center; }
+  .btn-iniciar  { background: var(--azul-l);  color: var(--azul-t);  }
+  .btn-finalizar{ background: var(--ambar-l); color: var(--ambar-t); }
+  .btn-hecho    { background: var(--verde-l); color: var(--verde-t); cursor: default; }
+  .maq-noreq { background: var(--gris-l); border-radius: 8px; padding: 10px; text-align: center; font-size: 13px; color: var(--txt2); font-style: italic; }
+  .hora-txt { font-size: 13px; color: var(--txt2); text-align: center; margin-top: 5px; }
+
+  /* ── ESTADO OT ── */
+  .estado-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 14px; }
+  .e-btn { padding: 13px 8px; border-radius: 8px; border: 2px solid var(--border); background: var(--bg); font-size: 13px; font-weight: 600; cursor: pointer; color: var(--txt2); }
+  .e-espera { border-color: var(--ambar);  background: var(--ambar-l);  color: var(--ambar-t);  }
+  .e-corte  { border-color: var(--azul);   background: var(--azul-l);   color: var(--azul-t);   }
+  .e-pulido { border-color: var(--purple); background: var(--purple-l); color: var(--purple-t); }
+  .e-listo  { border-color: var(--verde);  background: var(--verde-l);  color: var(--verde-t);  }
+
+  /* ── BOTONES ── */
+  .btn-prim { width: 100%; padding: 14px; background: var(--azul); color: #fff; border: none; border-radius: 10px; font-size: 16px; font-weight: 600; cursor: pointer; margin-bottom: 10px; }
+  .btn-prim:active { opacity: .85; }
+  .btn-sec  { width: 100%; padding: 12px; background: transparent; color: var(--txt); border: 1px solid var(--border); border-radius: 10px; font-size: 15px; cursor: pointer; }
+
+  /* ── LOGÍSTICA ── */
+  .log-item { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px; margin-bottom: 10px; }
+  .log-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px; }
+  .log-cli { font-size: 16px; font-weight: 600; margin-bottom: 4px; }
+  .log-row { display: flex; justify-content: space-between; font-size: 13px; color: var(--txt2); margin-bottom: 5px; }
+  .log-row strong { color: var(--txt); }
+  .log-foot { display: flex; justify-content: space-between; align-items: center; margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--border); }
+  .conf-btn { padding: 9px 16px; background: var(--verde-l); color: var(--verde-t); border: 1px solid #97C459; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer; }
+  .conf-btn:active { opacity: .75; }
+  .conf-btn.hecho { background: var(--gris-l); color: var(--txt2); border-color: var(--border); cursor: default; }
+
+  /* ── TOAST ── */
+  .toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(80px); background: #1a1a18; color: #fff; padding: 11px 22px; border-radius: 30px; font-size: 14px; font-weight: 500; transition: transform .3s ease; z-index: 99; white-space: nowrap; box-shadow: var(--shadow); }
+  .toast.visible { transform: translateX(-50%) translateY(0); }
+
+  /* ── LOADING ── */
+  .loading { display: flex; align-items: center; justify-content: center; gap: 10px; padding: 40px; color: var(--txt2); font-size: 14px; }
+  .spinner { width: 20px; height: 20px; border: 2px solid var(--border); border-top-color: var(--azul); border-radius: 50%; animation: spin .7s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* ── ERROR ── */
+  .error-box { background: var(--rojo-l); border: 1px solid #F09595; border-radius: var(--radius); padding: 14px; margin: 14px; font-size: 14px; color: var(--rojo-t); }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- HEADER -->
+  <div class="header">
+    <div>
+      <div class="header-title">Marmolería — Taller</div>
+      <div class="header-sub" id="fecha-lbl"></div>
+    </div>
+    <button class="sync-btn" onclick="sincronizar()">
+      <svg class="sync-icon" viewBox="0 0 20 20" fill="none">
+        <path d="M17 10A7 7 0 1 1 3.93 6M3 3v3.5h3.5" stroke="#0C447C" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      Sincronizar
+    </button>
+  </div>
+
+  <!-- NAV -->
+  <nav class="nav">
+    <button class="nav-btn activo" onclick="irA('inicio', this)">
+      <svg class="nav-icon" viewBox="0 0 20 20" fill="none">
+        <rect x="2" y="2" width="7" height="7" rx="1.5" fill="currentColor" opacity=".9"/>
+        <rect x="11" y="2" width="7" height="7" rx="1.5" fill="currentColor" opacity=".5"/>
+        <rect x="2" y="11" width="7" height="7" rx="1.5" fill="currentColor" opacity=".5"/>
+        <rect x="11" y="11" width="7" height="7" rx="1.5" fill="currentColor" opacity=".3"/>
+      </svg>
+      Inicio
+    </button>
+    <button class="nav-btn" onclick="irA('ordenes', this)">
+      <svg class="nav-icon" viewBox="0 0 20 20" fill="none">
+        <rect x="3" y="2" width="14" height="16" rx="2" stroke="currentColor" stroke-width="1.5"/>
+        <line x1="6" y1="7" x2="14" y2="7" stroke="currentColor" stroke-width="1.5"/>
+        <line x1="6" y1="11" x2="14" y2="11" stroke="currentColor" stroke-width="1.5"/>
+        <line x1="6" y1="15" x2="10" y2="15" stroke="currentColor" stroke-width="1.5"/>
+      </svg>
+      Órdenes
+    </button>
+    <button class="nav-btn" onclick="irA('taller', this)">
+      <svg class="nav-icon" viewBox="0 0 20 20" fill="none">
+        <circle cx="10" cy="10" r="7" stroke="currentColor" stroke-width="1.5"/>
+        <path d="M10 6v4l3 2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+      </svg>
+      Taller
+    </button>
+    <button class="nav-btn" onclick="irA('logistica', this)">
+      <svg class="nav-icon" viewBox="0 0 20 20" fill="none">
+        <rect x="1" y="8" width="12" height="9" rx="1.5" stroke="currentColor" stroke-width="1.5"/>
+        <path d="M13 11h3l3 3v4h-6V11z" stroke="currentColor" stroke-width="1.5"/>
+        <circle cx="5" cy="17" r="1.5" fill="currentColor"/>
+        <circle cx="15" cy="17" r="1.5" fill="currentColor"/>
+      </svg>
+      Logística
+    </button>
+  </nav>
+
+  <!-- CONTENIDO -->
+  <div class="contenido">
+
+    <!-- PANTALLA INICIO -->
+    <div class="pantalla activa" id="p-inicio">
+      <div class="stats" id="stats-inicio"></div>
+      <div class="sec">Próximas a vencer</div>
+      <div id="lista-urgentes"></div>
+    </div>
+
+    <!-- PANTALLA ÓRDENES -->
+    <div class="pantalla" id="p-ordenes">
+      <div class="filtros" id="filtros-ordenes">
+        <button class="chip activo" onclick="filtrarOrdenes(this,'todas')">Todas</button>
+        <button class="chip" onclick="filtrarOrdenes(this,'EN ESPERA')">En espera</button>
+        <button class="chip" onclick="filtrarOrdenes(this,'EN CORTE')">En corte</button>
+        <button class="chip" onclick="filtrarOrdenes(this,'EN PULIDO')">En pulido</button>
+        <button class="chip" onclick="filtrarOrdenes(this,'TERMINADO')">Terminadas</button>
+      </div>
+      <div id="lista-ordenes"></div>
+    </div>
+
+    <!-- PANTALLA TALLER -->
+    <div class="pantalla" id="p-taller">
+      <div class="stats" id="stats-taller"></div>
+      <div class="sec">Estado por OT</div>
+      <div id="lista-taller"></div>
+    </div>
+
+    <!-- PANTALLA DETALLE -->
+    <div class="pantalla" id="p-detalle">
+      <button class="back-btn" onclick="volver()">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+          <path d="M10 3L5 8l5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+        </svg>
+        Volver
+      </button>
+      <div id="detalle-info"></div>
+      <div class="sec-maq">Flujo de producción</div>
+      <div id="detalle-maquinas"></div>
+      <div class="sec-maq">Estado de la OT</div>
+      <div class="estado-grid">
+        <button class="e-btn" id="eb-espera"      onclick="selEstado('EN ESPERA')">En espera</button>
+        <button class="e-btn" id="eb-corte"       onclick="selEstado('EN CORTE')">En corte</button>
+        <button class="e-btn" id="eb-trasforera"  onclick="selEstado('EN TRASFORERA')">En trasforera</button>
+        <button class="e-btn" id="eb-pulidora"    onclick="selEstado('EN PULIDO')">En pulido</button>
+        <button class="e-btn" id="eb-terminacion" onclick="selEstado('EN TERMINACION')">En terminación</button>
+        <button class="e-btn" id="eb-listo"       onclick="selEstado('TERMINADO')">Terminado</button>
+      </div>
+      <button class="btn-prim" onclick="guardarCambios()">Guardar cambios en Sheets</button>
+      <button class="btn-sec"  onclick="volver()">Cancelar</button>
+    </div>
+
+    <!-- PANTALLA LOGÍSTICA -->
+    <div class="pantalla" id="p-logistica">
+      <div class="stats" id="stats-log"></div>
+      <div class="sec">Entregas y retiros</div>
+      <div id="lista-logistica"></div>
+    </div>
+
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ═══════════════════════════════════════════════════════════
+//  ⚙️  CONFIGURACIÓN — pegá aquí la URL de tu Web App
+// ═══════════════════════════════════════════════════════════
+const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyCug12r1Ld4lmM95K2VBkQhzomxMr_uWxnr04F3qulUmxsPoydwadr_InKhzjMiIudGQ/exec";
+
+// Listas de operarios por máquina
+const OPERARIOS = {
+  cortadora:   ["Juan A.", "Juan M.", "Daniel", "Luciano", "NO REQUIERE"],
+  trasforera:  ["Lizandro", "NO REQUIERE"],
+  pulidora:    ["Rito", "Yamil", "Toto", "NO REQUIERE"],
+  terminacion: ["Diego", "Toto", "NO REQUIERE"],
+};
+
+// ═══════════════════════════════════════════════════════════
+//  ESTADO GLOBAL
+// ═══════════════════════════════════════════════════════════
+let datos = {
+  ordenes:   [],
+  taller:    [],
+  logistica: [],
+};
+let otActual    = null;
+let pantallaAnt = "inicio";
+let estadoSel   = "";
+let cambiosMaq  = {}; // cambios pendientes de guardar
+
+// ═══════════════════════════════════════════════════════════
+//  INICIO
+// ═══════════════════════════════════════════════════════════
+document.addEventListener("DOMContentLoaded", () => {
+  setFecha();
+  sincronizar();
+});
+
+function setFecha() {
+  const d = new Date();
+  const dias  = ["Dom","Lun","Mar","Mié","Jue","Vie","Sáb"];
+  const meses = ["ene","feb","mar","abr","may","jun","jul","ago","sep","oct","nov","dic"];
+  document.getElementById("fecha-lbl").textContent =
+    `${dias[d.getDay()]} ${d.getDate()} ${meses[d.getMonth()]}`;
+}
+
+// ═══════════════════════════════════════════════════════════
+//  SINCRONIZACIÓN CON SHEETS
+// ═══════════════════════════════════════════════════════════
+// ── COMUNICACIÓN CON SHEETS via JSONP (evita CORS) ──
+
+var _jsonpCounter = 0;
+function llamarGet(params) {
+  return new Promise(function(resolve, reject) {
+    var cbName = "_jsonpCb" + (++_jsonpCounter);
+    params.callback = cbName;
+    var url = SCRIPT_URL + "?" + new URLSearchParams(params).toString();
+    console.log("llamarGet:", url);
+    var script = document.createElement("script");
+    var timeout = setTimeout(function() {
+      delete window[cbName];
+      document.body.removeChild(script);
+      reject(new Error("Timeout"));
+    }, 15000);
+    window[cbName] = function(data) {
+      clearTimeout(timeout);
+      delete window[cbName];
+      document.body.removeChild(script);
+      resolve(data);
+    };
+    script.src = url;
+    script.onerror = function() {
+      clearTimeout(timeout);
+      delete window[cbName];
+      document.body.removeChild(script);
+      reject(new Error("Error de red"));
+    };
+    document.body.appendChild(script);
+  });
+}
+
+function sincronizar() {
+  mostrarToast("Sincronizando con Sheets...");
+  llamarGet({ accion: "getOrdenes" })
+    .then(function(rOrd) {
+      if (rOrd.ok) datos.ordenes = rOrd.datos;
+      return llamarGet({ accion: "getTaller" });
+    })
+    .then(function(rTal) {
+      if (rTal.ok) datos.taller = rTal.datos;
+      return llamarGet({ accion: "getLogistica" });
+    })
+    .then(function(rLog) {
+      if (rLog.ok) datos.logistica = rLog.datos;
+      renderTodo();
+      mostrarToast("Datos actualizados ✓");
+    })
+    .catch(function() {
+      mostrarToast("Error de conexión — verificá el WiFi");
+    });
+}
+
+function postScript(cuerpo) {
+  return llamarGet(cuerpo);
+}
+
+// ═══════════════════════════════════════════════════════════
+//  NAVEGACIÓN
+// ═══════════════════════════════════════════════════════════
+function irA(pantalla, btn) {
+  document.querySelectorAll(".pantalla").forEach(p => p.classList.remove("activa"));
+  document.querySelectorAll(".nav-btn").forEach(b => b.classList.remove("activo"));
+  document.getElementById("p-" + pantalla).classList.add("activa");
+  if (btn) btn.classList.add("activo");
+}
+
+function volver() {
+  irA(pantallaAnt, document.querySelectorAll(".nav-btn")[
+    ["inicio","ordenes","taller","logistica"].indexOf(pantallaAnt)
+  ]);
+}
+
+// ═══════════════════════════════════════════════════════════
+//  RENDER GENERAL
+// ═══════════════════════════════════════════════════════════
+function renderTodo() {
+  renderInicio();
+  renderOrdenes();
+  renderTaller();
+  renderLogistica();
+}
+
+// ═══════════════════════════════════════════════════════════
+//  INICIO
+// ═══════════════════════════════════════════════════════════
+function renderInicio() {
+  const t = datos.taller;
+  const activas    = t.filter(o => o.estado !== "TERMINADO").length;
+  const enProceso  = t.filter(o => o.estado === "EN CORTE" || o.estado === "EN PULIDO").length;
+  const terminadas = t.filter(o => o.estado === "TERMINADO").length;
+  const entregasHoy= datos.logistica.filter(o =>
+    esHoy(o.fechaProg) && o.estado !== "CONFIRMADO"
+  ).length;
+
+  document.getElementById("stats-inicio").innerHTML = `
+    <div class="stat"><div class="stat-lbl">OT activas</div><div class="stat-val info">${activas}</div></div>
+    <div class="stat"><div class="stat-lbl">En proceso</div><div class="stat-val warn">${enProceso}</div></div>
+    <div class="stat"><div class="stat-lbl">Terminadas</div><div class="stat-val ok">${terminadas}</div></div>
+    <div class="stat"><div class="stat-lbl">Entregas hoy</div><div class="stat-val bad">${entregasHoy}</div></div>
+  `;
+
+  // Urgentes = sin terminar y fecha de entrega hoy o pasada
+  const hoy = new Date(); hoy.setHours(0,0,0,0);
+  const urgentes = datos.ordenes.filter(o => {
+    if (o.estadoFinal === "TERMINADO") return false;
+    const fe = parseFecha(o.fechaEntrega);
+    return fe && fe <= hoy;
+  }).slice(0,5);
+
+  document.getElementById("lista-urgentes").innerHTML =
+    urgentes.length ? urgentes.map(cardOrden).join("") :
+    `<div style="color:var(--txt2);font-size:14px;padding:20px 0">No hay OT urgentes</div>`;
+}
+
+// ═══════════════════════════════════════════════════════════
+//  ÓRDENES
+// ═══════════════════════════════════════════════════════════
+function renderOrdenes() {
+  document.getElementById("lista-ordenes").innerHTML =
+    datos.taller.map(t => {
+      const o = datos.ordenes.find(x => x.ot === t.ot) || {};
+      return cardOrdenConTaller(o, t);
+    }).join("") || "<div style='color:var(--txt2);padding:20px 0'>Sin órdenes</div>";
+}
+
+function filtrarOrdenes(btn, tipo) {
+  document.querySelectorAll("#filtros-ordenes .chip").forEach(c => c.classList.remove("activo"));
+  btn.classList.add("activo");
+  const items = document.querySelectorAll("#lista-ordenes .card");
+  items.forEach(c => {
+    c.style.display = (tipo === "todas" || c.dataset.estado === tipo) ? "block" : "none";
+  });
+}
+
+function cardOrden(o) {
+  const tal = datos.taller.find(t => t.ot === o.ot) || {};
+  return cardOrdenConTaller(o, tal);
+}
+
+function cardOrdenConTaller(o, t) {
+  const estado = t.estado || o.estadoFinal || "EN ESPERA";
+  const badgeClass = badgeEstado(estado);
+  const esUrgente = esHoy(o.fechaEntrega) || esPasada(o.fechaEntrega);
+  return `<div class="card" data-estado="${estado}" onclick="abrirDetalle('${o.ot || t.ot}')">
+    <div class="card-top">
+      <span class="ot-num">OT-${o.ot || t.ot}</span>
+      <span class="badge ${badgeClass}">${estado}</span>
+    </div>
+    <div class="card-cli">${t.cliente || o.cliente || "—"}</div>
+    <div class="card-det">${t.producto || o.producto || "—"} · ${t.ambiente || o.ambiente || "—"} · ${o.largo||t.largo||0}×${o.ancho||t.ancho||0} m</div>
+    <div class="card-foot">
+      <span>${o.tipoEntrega || "—"}</span>
+      <span class="${esUrgente ? "urg" : ""}">${mostrarFecha(o.fechaEntrega)}</span>
+    </div>
+  </div>`;
+}
+
+// ═══════════════════════════════════════════════════════════
+//  TALLER
+// ═══════════════════════════════════════════════════════════
+function renderTaller() {
+  const activos    = datos.taller.filter(o => o.estado !== "TERMINADO").length;
+  const terminados = datos.taller.filter(o => o.estado === "TERMINADO").length;
+
+  document.getElementById("stats-taller").innerHTML = `
+    <div class="stat"><div class="stat-lbl">En proceso</div><div class="stat-val warn">${activos}</div></div>
+    <div class="stat"><div class="stat-lbl">Terminados</div><div class="stat-val ok">${terminados}</div></div>
+  `;
+
+  document.getElementById("lista-taller").innerHTML = datos.taller.map(t => {
+    const maqs = [
+      { nom:"CORTADORA",    op:t.cortadora,    ini:t.cortadoraInicio,    fin:t.cortadoraFin    },
+      { nom:"TRASFORERA",   op:t.trasforera,   ini:t.trasforeraInicio,   fin:t.trasforeraFin   },
+      { nom:"PULIDORA",     op:t.pulidora,     ini:t.pulidoraInicio,     fin:t.pulidoraFin     },
+      { nom:"TERMINACIÓN",  op:t.terminacion,  ini:t.terminacionInicio,  fin:t.terminacionFin  },
+    ];
+    const pastillas = maqs.map(m => {
+      const noreq = m.op === "NO REQUIERE" || m.op === "";
+      const done  = m.ini && m.fin;
+      const prog  = m.ini && !m.fin;
+      const bg    = noreq ? "var(--gris-l)"   : done ? "var(--verde-l)" : prog ? "var(--azul-l)" : "var(--gris-l)";
+      const co    = noreq ? "var(--txt2)"     : done ? "var(--verde-t)" : prog ? "var(--azul-t)" : "var(--txt2)";
+      const txt   = noreq ? "—" : (m.op || "—");
+      return `<div style="text-align:center;font-size:11px">
+        <div style="background:${bg};color:${co};border-radius:6px;padding:5px 0;font-weight:600;margin-bottom:3px">${m.nom}</div>
+        <div style="color:var(--txt2)">${txt}</div>
+      </div>`;
+    }).join("");
+    const estado = t.estado || "EN ESPERA";
+    return `<div class="card" onclick="abrirDetalle('${t.ot}')">
+      <div class="card-top">
+        <span class="ot-num">OT-${t.ot} — ${t.cliente}</span>
+        <span class="badge ${badgeEstado(estado)}">${estado}</span>
+      </div>
+      <div class="card-det" style="margin:6px 0 12px">${t.producto} · ${t.ambiente}</div>
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px">${pastillas}</div>
+    </div>`;
+  }).join("") || "<div style='color:var(--txt2);padding:20px 0'>Sin registros de taller</div>";
+}
+
+// ═══════════════════════════════════════════════════════════
+//  LOGÍSTICA
+// ═══════════════════════════════════════════════════════════
+function renderLogistica() {
+  const pendientes  = datos.logistica.filter(o => o.estado !== "CONFIRMADO").length;
+  const confirmadas = datos.logistica.filter(o => o.estado === "CONFIRMADO").length;
+
+  document.getElementById("stats-log").innerHTML = `
+    <div class="stat"><div class="stat-lbl">Pendientes</div><div class="stat-val warn">${pendientes}</div></div>
+    <div class="stat"><div class="stat-lbl">Confirmadas</div><div class="stat-val ok">${confirmadas}</div></div>
+  `;
+
+  document.getElementById("lista-logistica").innerHTML = datos.logistica.map(l => {
+    const urgente = esHoy(l.fechaProg) || esPasada(l.fechaProg);
+    const conf    = l.estado === "CONFIRMADO";
+    return `<div class="log-item">
+      <div class="log-top">
+        <span class="ot-num">OT-${l.ot}</span>
+        <span class="badge ${l.tipoEntrega === "RETIRO EN FÁBRICA" ? "b-espera" : "b-corte"}">${l.tipoEntrega || "—"}</span>
+      </div>
+      <div class="log-cli">${l.cliente}</div>
+      <div class="log-row"><span>Tel/Cel:</span><strong>${l.tel || "—"}</strong></div>
+      <div class="log-row"><span>Domicilio:</span><strong>${l.domicilio || "—"}</strong></div>
+      <div class="log-row"><span>Producto:</span><strong>${l.producto} · ${l.ambiente}</strong></div>
+      <div class="log-row"><span>Medidas:</span><strong>${l.largo}×${l.ancho} m</strong></div>
+      <div class="log-row"><span>Fecha programada:</span><strong class="${urgente && !conf ? "bad" : ""}">${l.fechaProg || "—"}</strong></div>
+      <div class="log-row"><span>Horario:</span><strong>${l.hsEstimado || "—"}</strong></div>
+      <div class="log-row"><span>Vendedor:</span><strong>${l.vendedor || "—"}</strong></div>
+      <div class="log-row"><span>Equipo resp.:</span><strong>${l.equipo || "—"}</strong></div>
+      ${l.observaciones ? `<div class="log-row"><span>Obs.:</span><strong>${l.observaciones}</strong></div>` : ""}
+      <div class="log-foot">
+        <span class="badge ${conf ? "b-confirm" : "b-pend"}">${l.estado || "PENDIENTE"}</span>
+        <button class="conf-btn ${conf ? "hecho" : ""}"
+          onclick="${conf ? "" : `confirmarEntrega(this,'${l.ot}')`}">
+          ${conf ? "Confirmado ✓" : (l.tipoEntrega === "RETIRO EN FÁBRICA" ? "Confirmar retiro" : "Confirmar entrega")}
+        </button>
+      </div>
+    </div>`;
+  }).join("") || "<div style='color:var(--txt2);padding:20px 0'>Sin registros de logística</div>";
+}
+
+// ═══════════════════════════════════════════════════════════
+//  DETALLE DE OT
+// ═══════════════════════════════════════════════════════════
+function abrirDetalle(ot) {
+  const activa = document.querySelector(".pantalla.activa");
+  pantallaAnt  = activa ? activa.id.replace("p-","") : "inicio";
+  otActual     = ot;
+  cambiosMaq   = {};
+
+  const o = datos.ordenes.find(x => x.ot === ot) || {};
+  const t = datos.taller.find(x => x.ot === ot)  || {};
+
+  // Info panel
+  document.getElementById("detalle-info").innerHTML = `
+    <div class="dpanel">
+      <div class="drow"><span class="dlbl">OT Único</span><span class="dval">OT-${ot}</span></div>
+      <div class="drow"><span class="dlbl">Cliente</span><span class="dval">${o.cliente || t.cliente || "—"}</span></div>
+      <div class="drow"><span class="dlbl">Tel/Cel</span><span class="dval">${o.tel || "—"}</span></div>
+      <div class="drow"><span class="dlbl">Vendedor</span><span class="dval">${o.vendedor || "—"}</span></div>
+      <div class="drow"><span class="dlbl">Producto</span><span class="dval">${o.producto || t.producto || "—"}</span></div>
+      <div class="drow"><span class="dlbl">Ambiente</span><span class="dval">${o.ambiente || t.ambiente || "—"}</span></div>
+      <div class="drow"><span class="dlbl">Medidas</span><span class="dval">${o.largo||0} × ${o.ancho||0} m · ${o.m2||0} m²</span></div>
+      <div class="drow"><span class="dlbl">Fecha entrega</span><span class="dval">${mostrarFecha(o.fechaEntrega)}</span></div>
+      <div class="drow"><span class="dlbl">Tipo entrega</span><span class="dval">${o.tipoEntrega || "—"}</span></div>
+    </div>`;
+
+  // Máquinas
+  const maquinas = [
+    { key:"cortadora",    nombre:"CORTADORA",    operario:t.cortadora,    inicio:t.cortadoraInicio,    fin:t.cortadoraFin    },
+    { key:"trasforera",   nombre:"TRASFORERA",   operario:t.trasforera,   inicio:t.trasforeraInicio,   fin:t.trasforeraFin   },
+    { key:"pulidora",     nombre:"PULIDORA",     operario:t.pulidora,     inicio:t.pulidoraInicio,     fin:t.pulidoraFin     },
+    { key:"terminacion",  nombre:"TERMINACIÓN",  operario:t.terminacion,  inicio:t.terminacionInicio,  fin:t.terminacionFin  },
+  ];
+
+  document.getElementById("detalle-maquinas").innerHTML = maquinas.map(m => {
+    const opcs  = OPERARIOS[m.key].map(op =>
+      `<option value="${op}" ${m.operario === op ? "selected" : ""}>${op}</option>`
+    ).join("");
+    const noreq = m.operario === "NO REQUIERE";
+    const done  = m.inicio && m.fin;
+    const prog  = m.inicio && !m.fin;
+    const cls   = done ? "finalizado" : prog ? "en-proceso" : "";
+    const estLbl= done ? "Finalizado" : prog ? "En proceso" : "Pendiente";
+    const estCls= done ? "est-done"   : prog ? "est-prog"   : "est-pend";
+
+    if (noreq) {
+      return `<div class="maq-card">
+        <div class="maq-head">
+          <span class="maq-nombre">${m.nombre}</span>
+          <span class="maq-estado est-pend">No requiere</span>
+        </div>
+        <div class="maq-noreq">Esta OT no requiere esta etapa</div>
+      </div>`;
+    }
+
+    return `<div class="maq-card ${cls}" id="maq-${m.key}">
+      <div class="maq-head">
+        <span class="maq-nombre">${m.nombre}</span>
+        <span class="maq-estado ${estCls}" id="est-${m.key}">${estLbl}</span>
+      </div>
+      <select class="maq-select" id="sel-${m.key}" onchange="cambiarOperario('${m.key}', this.value)">
+        <option value="">— Seleccioná operario —</option>
+        ${opcs}
+      </select>
+      <div class="maq-times">
+        <div>
+          <button class="time-btn ${m.inicio ? "btn-hecho" : "btn-iniciar"}"
+            id="ini-${m.key}"
+            onclick="${m.inicio ? "" : `marcarHora('${m.key}','inicio')`}">
+            ${m.inicio ? "▶ " + mostrarHora(m.inicio) : "▶ Marcar inicio"}
+          </button>
+          <div class="hora-txt" id="hora-ini-${m.key}">${mostrarHora(m.inicio)}</div>
+        </div>
+        <div>
+          <button class="time-btn ${!m.inicio ? "btn-hecho" : m.fin ? "btn-hecho" : "btn-finalizar"}"
+            id="fin-${m.key}"
+            onclick="${!m.inicio || m.fin ? "" : `marcarHora('${m.key}','fin')`}">
+            ${m.fin ? "■ " + mostrarHora(m.fin) : "■ Marcar fin"}
+          </button>
+          <div class="hora-txt" id="hora-fin-${m.key}">${mostrarHora(m.fin)}</div>
+        </div>
+      </div>
+    </div>`;
+  }).join("");
+
+  // Estado actual
+  estadoSel = t.estado || "EN ESPERA";
+  selEstado(estadoSel);
+
+  // Mostrar pantalla detalle
+  document.querySelectorAll(".pantalla").forEach(p => p.classList.remove("activa"));
+  document.querySelectorAll(".nav-btn").forEach(b => b.classList.remove("activo"));
+  document.getElementById("p-detalle").classList.add("activa");
+  document.getElementById("p-detalle").scrollTop = 0;
+}
+
+// ═══════════════════════════════════════════════════════════
+//  INTERACCIÓN CON MÁQUINAS
+// ═══════════════════════════════════════════════════════════
+function cambiarOperario(maq, valor) {
+  if (!cambiosMaq[maq]) cambiosMaq[maq] = {};
+  cambiosMaq[maq].operario = valor;
+}
+
+function marcarHora(maq, tipo) {
+  const ahora = horaActual();
+  if (!cambiosMaq[maq]) cambiosMaq[maq] = {};
+  cambiosMaq[maq][tipo] = ahora;
+
+  // Actualizar UI inmediatamente
+  if (tipo === "inicio") {
+    document.getElementById(`hora-ini-${maq}`).textContent = mostrarHora(ahora);
+    document.getElementById(`ini-${maq}`).className = "time-btn btn-hecho";
+    document.getElementById(`ini-${maq}`).textContent = "▶ Iniciado";
+    document.getElementById(`ini-${maq}`).onclick = null;
+    document.getElementById(`fin-${maq}`).className = "time-btn btn-finalizar";
+    document.getElementById(`fin-${maq}`).onclick = () => marcarHora(maq, "fin");
+    document.getElementById(`est-${maq}`).textContent = "En proceso";
+    document.getElementById(`est-${maq}`).className   = "maq-estado est-prog";
+    document.getElementById(`maq-${maq}`).className   = "maq-card en-proceso";
+  } else {
+    document.getElementById(`hora-fin-${maq}`).textContent = mostrarHora(ahora);
+    document.getElementById(`fin-${maq}`).className  = "time-btn btn-hecho";
+    document.getElementById(`fin-${maq}`).textContent = "■ Finalizado";
+    document.getElementById(`fin-${maq}`).onclick     = null;
+    document.getElementById(`est-${maq}`).textContent = "Finalizado";
+    document.getElementById(`est-${maq}`).className   = "maq-estado est-done";
+    document.getElementById(`maq-${maq}`).className   = "maq-card finalizado";
+  }
+}
+
+function selEstado(e) {
+  estadoSel = e;
+  const map = {
+    "EN ESPERA":     "eb-espera",
+    "EN CORTE":      "eb-corte",
+    "EN TRASFORERA": "eb-trasforera",
+    "EN PULIDO":     "eb-pulidora",
+    "EN TERMINACION":"eb-terminacion",
+    "TERMINADO":     "eb-listo",
+  };
+  const cls = {
+    "eb-espera":      "e-btn e-espera",
+    "eb-corte":       "e-btn e-corte",
+    "eb-trasforera":  "e-btn e-pulido",
+    "eb-pulidora":    "e-btn e-pulido",
+    "eb-terminacion": "e-btn e-pulido",
+    "eb-listo":       "e-btn e-listo",
+  };
+  ["eb-espera","eb-corte","eb-trasforera","eb-pulidora","eb-terminacion","eb-listo"].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.className = "e-btn";
+  });
+  if (map[e]) {
+    const el = document.getElementById(map[e]);
+    if (el) el.className = cls[map[e]];
+  }
+}
+
+// ═══════════════════════════════════════════════════════════
+//  GUARDAR CAMBIOS → SHEETS
+// ═══════════════════════════════════════════════════════════
+function guardarCambios() {
+  if (!otActual) return;
+  mostrarToast("Guardando en Sheets...");
+
+  var maqKeys = ["cortadora","trasforera","pulidora","terminacion"];
+  var llamadas = [];
+
+  for (var i = 0; i < maqKeys.length; i++) {
+    var maq = maqKeys[i];
+    var cambios = cambiosMaq[maq];
+    if (!cambios) continue;
+    var campos = Object.keys(cambios);
+    for (var j = 0; j < campos.length; j++) {
+      llamadas.push({
+        accion: "actualizarTaller",
+        ot: otActual,
+        maquina: maq,
+        campo: campos[j],
+        valor: cambios[campos[j]]
+      });
+    }
+  }
+
+  if (llamadas.length === 0) {
+    mostrarToast("Sin cambios para guardar");
+    return;
+  }
+
+  var total = llamadas.length;
+  var completadas = 0;
+  var errores = 0;
+
+  function onOk() {
+    completadas++;
+    if (completadas + errores === total) terminar();
+  }
+  function onErr() {
+    errores++;
+    if (completadas + errores === total) terminar();
+  }
+  function terminar() {
+    if (errores === 0) {
+      var t = null;
+      for (var k = 0; k < datos.taller.length; k++) {
+        if (datos.taller[k].ot === otActual) { t = datos.taller[k]; break; }
+      }
+      if (t) {
+        for (var m = 0; m < maqKeys.length; m++) {
+          var mk = maqKeys[m];
+          var c = cambiosMaq[mk];
+          if (!c) continue;
+          if (c.operario !== undefined) t[mk] = c.operario;
+          if (c.inicio !== undefined) t[mk + "Inicio"] = c.inicio;
+          if (c.fin !== undefined) t[mk + "Fin"] = c.fin;
+        }
+      }
+      cambiosMaq = {};
+      mostrarToast("Guardado correctamente ✓");
+      setTimeout(function() { volver(); }, 1200);
+    } else {
+      mostrarToast("Error al guardar — intentá de nuevo");
+    }
+  }
+
+  for (var l = 0; l < llamadas.length; l++) {
+    llamarGet(llamadas[l]).then(onOk).catch(onErr);
+  }
+}
+
+// ═══════════════════════════════════════════════════════════
+//  CONFIRMAR ENTREGA / RETIRO
+// ═══════════════════════════════════════════════════════════
+function confirmarEntrega(btn, ot) {
+  btn.textContent = "Guardando...";
+  btn.classList.add("hecho");
+  llamarGet({ accion: "actualizarLogistica", ot: ot, campo: "estado", valor: "CONFIRMADO" })
+    .then(function() {
+      for (var i = 0; i < datos.logistica.length; i++) {
+        if (datos.logistica[i].ot === ot) { datos.logistica[i].estado = "CONFIRMADO"; break; }
+      }
+      btn.textContent = "Confirmado ✓";
+      mostrarToast("Entrega OT-" + ot + " confirmada ✓");
+      renderLogistica();
+    })
+    .catch(function() {
+      btn.textContent = "Reintentar";
+      btn.classList.remove("hecho");
+      mostrarToast("Error al confirmar");
+    });
+}
+
+// ═══════════════════════════════════════════════════════════
+//  UTILIDADES
+// ═══════════════════════════════════════════════════════════
+function horaActual() {
+  var n = new Date();
+  var dd = String(n.getDate()).padStart(2,"0");
+  var mm = String(n.getMonth()+1).padStart(2,"0");
+  var aaaa = n.getFullYear();
+  var hh = String(n.getHours()).padStart(2,"0");
+  var min = String(n.getMinutes()).padStart(2,"0");
+  return dd + "/" + mm + "/" + aaaa + " " + hh + ":" + min;
+}
+
+// Convierte cualquier formato de fecha a objeto Date
+function parseFecha(str) {
+  if (!str) return null;
+  // formato dd/MM/yyyy
+  if (/^\d{2}\/\d{2}\/\d{4}$/.test(str)) {
+    const p = str.split("/");
+    return new Date(p[2], p[1]-1, p[0]);
+  }
+  // formato largo inglés "Sat Apr 25 2026 00:00:00 GMT..."
+  const d = new Date(str);
+  if (!isNaN(d)) return d;
+  return null;
+}
+
+// Extrae solo la hora de un string "dd/mm/yyyy hh:mm"
+function mostrarHora(str) {
+  if (!str) return "";
+  // Si tiene espacio, tomar la parte de la hora
+  var partes = String(str).split(" ");
+  if (partes.length >= 2) return partes[1];
+  // Si es solo hora
+  if (str.indexOf(":") !== -1) return str;
+  return str;
+}
+
+// Muestra fecha en formato dd/mm/aaaa
+function mostrarFecha(str) {
+  if (!str) return "—";
+  const f = parseFecha(str);
+  if (!f || isNaN(f)) return str;
+  return String(f.getDate()).padStart(2,"0") + "/" +
+         String(f.getMonth()+1).padStart(2,"0") + "/" +
+         f.getFullYear();
+}
+
+function esHoy(str) {
+  const f = parseFecha(str);
+  if (!f) return false;
+  const h = new Date(); h.setHours(0,0,0,0);
+  f.setHours(0,0,0,0);
+  return f.getTime() === h.getTime();
+}
+
+function esPasada(str) {
+  const f = parseFecha(str);
+  if (!f) return false;
+  const h = new Date(); h.setHours(0,0,0,0);
+  f.setHours(0,0,0,0);
+  return f < h;
+}
+
+function badgeEstado(estado) {
+  const map = {
+    "EN ESPERA":     "b-espera",
+    "EN CORTE":      "b-corte",
+    "EN TRASFORERA": "b-corte",
+    "EN PULIDO":     "b-pulido",
+    "EN TERMINACION":"b-pulido",
+    "TERMINADO":     "b-listo",
+  };
+  return map[estado] || "b-gris";
+}
+
+function mostrarToast(msg) {
+  const t = document.getElementById("toast");
+  t.textContent = msg;
+  t.classList.add("visible");
+  clearTimeout(window._toastTimer);
+  window._toastTimer = setTimeout(() => t.classList.remove("visible"), 2800);
+}
+</script>
+</body>
+</html>
